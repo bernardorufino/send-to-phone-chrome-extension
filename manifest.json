@@ -1,0 +1,52 @@
+{
+  "manifest_version": 2,
+
+  "name": "Send To Phone",
+  "description": "This extension allows you to send webpages to your Android device and open them with their specific app, or with the default browser.",
+  "version": "1.0",
+
+  "icons": {
+    "24": "res/button_24.png",
+    "36": "res/button_36.png",
+    "48": "res/icon_48.png",
+    "72": "res/icon_72.png",
+    "96": "res/button_96.png"
+  },
+
+  "browser_action": {
+    "default_title": "Send To Phone",
+    "default_popup": "popup.htm"
+  },
+
+  "permissions": [
+    "activeTab",
+    "contextMenus",
+    "identity",
+    "identity.email",
+    "tabs",
+    "https://send-to-phone.herokuapp.com/",
+    "http://localhost:5000/"
+  ],
+
+  "background": {
+    "scripts": ["background.js"]
+  },
+
+  "commands": {
+    "send": {
+      "suggested_key": {
+        "default": "Alt+S",
+        "mac": "Alt+S"
+      },
+      "description": "Send opened page to default phone"
+    },
+    "launch": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "Launch opened page on default phone"
+    }
+  }
+}
+  
