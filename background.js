@@ -33,12 +33,12 @@ Service = {
 
   // Private
   reflowCallbacks: function(callbacks, xhr) {
-    if (callbacks.onload == null) callbacks.onload = EMPTY_FUNCTION
+    if (callbacks.onsuccess == null) callbacks.onsuccess = EMPTY_FUNCTION
     if (callbacks.onerror == null) callbacks.onerror = EMPTY_FUNCTION
     return {
       onload: function(e) {
         if (200 <= xhr.status && xhr.status < 300) {
-          callbacks.onload(xhr, e);
+          callbacks.onsuccess(xhr, e);
         } else {
           callbacks.onerror(xhr, e);
         }
@@ -50,28 +50,33 @@ Service = {
   }
 }
 
-function getUserAndTabData(callbacks) {
+function getUserAndPageData(callbacks) {
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     var tab = tabs[0];
-    getUserData({
-      onload: function(xhr, e, user) {
-        callbacks.onload(xhr, e, {user: user, tab: tab});
-      },
-      onerror: callbacks.onerror
+    chrome.tabs.sendMessage(tab.id, {request: 'getPageTitle'}, function(res) {
+      title = (res != null && res.title != null) ? res.title : tab.title;
+      console.log('title = ' + title)
+      page = {tab: tab, title: title, url: tab.url}
+      getUserData({
+        onsuccess: function(xhr, e, user) {
+          callbacks.onsuccess(xhr, e, {user: user, page: page});
+        },
+        onerror: callbacks.onerror
+      });
     });
   });
 }
 
 function getUserData(callbacks) {
   if (User.email != null && User.devices.length > 0) {
-    callbacks.onload(null, null, User);
+    callbacks.onsuccess(null, null, User);
   } else {
     chrome.identity.getProfileUserInfo(function(userInfo) {
       User.email = userInfo.email;
       Service.getDevices(User.email, {
-        onload: function(xhr, e) {
+        onsuccess: function(xhr, e) {
           User.devices = xhr.response.slice();
-          callbacks.onload(xhr, e, User);
+          callbacks.onsuccess(xhr, e, User);
         },
         onerror: callbacks.onerror
       });
@@ -79,26 +84,26 @@ function getUserData(callbacks) {
   }
 }
 
-function getItem(tab, actionType) {
+function getItem(page, actionType) {
   return {
     type: 'url',
     title: '',
-    description: tab.title,
-    data: tab.url,
+    description: page.title,
+    data: page.url,
     action_type: actionType
   }
 }
 
-function sendItem(deviceIndex, user, tab, actionType) {
+function sendItem(deviceIndex, user, page, actionType) {
   if (deviceIndex >= user.devices.length) return;
   var deviceId = user.devices[deviceIndex].id;
-  var item = getItem(tab, actionType);
+  var item = getItem(page, actionType);
   Service.sendItem(deviceId, item, {});
 }
 
 function getCallbacks(reply) {
   return {
-    onload: function(xhr, e, data) {
+    onsuccess: function(xhr, e, data) {
       var code = (xhr != null) ? xhr.status : -1;
       reply({status: 'success', code: code, data: data});
     },
@@ -110,8 +115,8 @@ function getCallbacks(reply) {
 
 chrome.runtime.onMessage.addListener(function(data, sender, reply) {
   switch(data.request) {
-    case 'getUserAndTabData':
-      getUserAndTabData(getCallbacks(reply));
+    case 'getUserAndPageData':
+      getUserAndPageData(getCallbacks(reply));
       return true;
     case 'sendItem':
       Service.sendItem(data.deviceId, data.item, getCallbacks(reply));
@@ -123,13 +128,13 @@ chrome.commands.onCommand.addListener(function(command) {
   var defaultDeviceIndex = 0; // TODO
   switch (command) {
     case 'send':
-      getUserAndTabData({onload: function(xhr, e, data) {
-          sendItem(defaultDeviceIndex, data.user, data.tab, 'notification');
+      getUserAndPageData({onsuccess: function(xhr, e, data) {
+          sendItem(defaultDeviceIndex, data.user, data.page, 'notification');
       }});
       break;
     case 'launch':
-      getUserAndTabData({onload: function(xhr, e, data) {
-          sendItem(defaultDeviceIndex, data.user, data.tab, 'launch');
+      getUserAndPageData({onsuccess: function(xhr, e, data) {
+          sendItem(defaultDeviceIndex, data.user, data.page, 'launch');
       }});
       break;
   }

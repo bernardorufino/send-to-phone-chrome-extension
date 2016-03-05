@@ -115,11 +115,11 @@ document.addEventListener('DOMContentLoaded', function() {
   Elements.devices = document.getElementById("devices");
   
   setStatus("Loading...");
-  chrome.runtime.sendMessage({request: 'getUserAndTabData'}, function(ans) {
+  chrome.runtime.sendMessage({request: 'getUserAndPageData'}, function(ans) {
     if (ans.status == 'success') {
       setStatus(null);
-      Page.url = ans.data.tab.url;
-      Page.title = ans.data.tab.title;
+      Page.url = ans.data.page.url;
+      Page.title = ans.data.page.title;
       User.email = ans.data.user.email;
       console.log('  devices = ' + ans.data.user.devices.length)
       setDevices(ans.data.user.devices);
