@@ -7,8 +7,8 @@ User = {
 
 Service = {
 
-  ENDPOINT: "http://localhost:5000",
-  // ENDPOINT: "https://send-to-phone.herokuapp.com",
+  // ENDPOINT: "http://localhost:5000",
+  ENDPOINT: "https://send-to-phone.herokuapp.com",
 
   getDevices: function(userEmail, callbacks) {
     var xhr = new XMLHttpRequest();
