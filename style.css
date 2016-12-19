@@ -5,7 +5,7 @@ body {
 	font-family: 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Geneva, Verdana, sans-serif;
 	font-size: 0.8em;
 	color: #333333;
-	width: 200px;
+	width: 220px;
 	margin: 10px 10px 0 10px;
 }
 .call {
@@ -24,7 +24,7 @@ body {
 }
 #devices li .name {
 	display: inline-block;
-	width: 190px;
+	width: 180px;
 	cursor: pointer;
 	padding: 8px 10px 8px 26px;
 	background-image: url("res/smartphone_icon_24.png");
@@ -35,18 +35,23 @@ body {
 #devices li .name:hover {
 	background-color: #BBCEEC;
 }
-#devices li .launch {
+#devices li .icon {
 	display: inline-block;
 	width: 30px;
 	cursor: pointer;
 	padding: 8px 0;
 	color: transparent;
-	background-image: url("res/launch_24.png");
 	background-size: 18px 18px;
 	background-position: center center;
 	background-repeat: no-repeat;	
 }
-#devices li .launch:hover {
+#devices li .launch {
+	background-image: url("res/launch_24.png");
+}
+#devices li .remove {
+	background-image: url("res/close_24.png");
+}
+#devices li .icon:hover {
 	background-color: #BBCEEC;
 }
 

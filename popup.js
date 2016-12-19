@@ -1,6 +1,16 @@
 User = {
   email: null,
-  devices: []
+  devices: [],
+
+  getDevice: function(id) {
+    for (var i = 0; i < this.devices.length; i++) {
+      var device = this.devices[i]
+      if (device.id == id) {
+        return device;
+      }
+    }
+    return null;
+  }
 }
 
 Elements = {
@@ -37,59 +47,80 @@ function getItem(actionType) {
   };
 }
 
-function sendItem(deviceIndex, actionType) {
-  var deviceId = User.devices[deviceIndex].id;
-  var deviceName = User.devices[deviceIndex].name;
+function onDeviceItemClick(event) {
+  var element = event.target;
+  var device = User.getDevice(element.dataset.deviceId)
+  var actionType = element.dataset.actionType;
 
-  setStatus("Sending to " + deviceName + "...");
-
-  chrome.runtime.sendMessage({
-    request: 'sendItem',
-    deviceId: deviceId,
-    item: getItem(actionType)
-  }, function(ans) {
-    if (ans.status == 'success') {
-      if (200 <= ans.code && ans.code < 300) {
+  if (actionType == 'remove') {
+    setStatus("Removing " + device.name + "...");
+    chrome.runtime.sendMessage({
+      request: 'removeDevice',
+      deviceId: device.id
+    }, function(ans) {
+      if (ans.status == 'success') {
+        var li = element.parentElement
+        li.parentElement.removeChild(li)
+        var deviceIndex = User.devices.indexOf(device)
+        User.devices.splice(deviceIndex, 1)
+        setStatus("Removed", 500);
+      } else {
+        setStatus("Error removing " + device.name, 1000);
+      }
+    });
+  } else if (actionType == 'notification' || actionType == 'launch') {
+    setStatus("Sending to " + device.name + "...");
+    chrome.runtime.sendMessage({
+      request: 'sendItem',
+      deviceId: device.id,
+      item: getItem(actionType)
+    }, function(ans) {
+      if (ans.status == 'success') {
         setStatus("Sent", 500);
       } else {
         setStatus("Error sending page to " + deviceName, 1000);
       }
-    } else {
-      setStatus("Error sending page to " + deviceName, 1000);
-    }
-  });
+    });
+  }
+  
 }
 
-function onDeviceItemClick(event) {
-  var element = event.target;
-  var deviceIndex = element.dataset.deviceIndex;
-  var actionType = element.dataset.actionType;
-  sendItem(deviceIndex, actionType)
-}
-
-function createDeviceItem(deviceIndex) {
+function createDeviceItem(device) {
   var li = document.createElement("li");
+
   var name = document.createElement("span");
   name.className = "name";
-  name.textContent = User.devices[deviceIndex].name;
-  name.dataset.deviceIndex = deviceIndex;
+  name.textContent = device.name;
+  name.dataset.deviceId = device.id;
   name.dataset.actionType = 'notification';
   name.addEventListener("click", onDeviceItemClick);
   li.appendChild(name);
+  
   var launch = document.createElement("span");
-  launch.className = "launch";
+  launch.className = "icon launch";
   launch.textContent = ".";
-  launch.dataset.deviceIndex = deviceIndex;
+  launch.dataset.deviceId = device.id;
   launch.dataset.actionType = 'launch';
   launch.addEventListener("click", onDeviceItemClick);
   launch.addEventListener("mouseover", function() {setPopupTitle('launchCall');});
   launch.addEventListener("mouseout", function() {setPopupTitle('sendCall');});
   li.appendChild(launch);
+
+  var remove = document.createElement("span");
+  remove.className = "icon remove";
+  remove.textContent = ".";
+  remove.dataset.deviceId = device.id;
+  remove.dataset.actionType = 'remove';
+  remove.addEventListener("click", onDeviceItemClick);
+  remove.addEventListener("mouseover", function() {setPopupTitle('removeDevice');});
+  remove.addEventListener("mouseout", function() {setPopupTitle('sendCall');});
+  li.appendChild(remove);
+  
   return li;
 }
 
 function setPopupTitle(choosenId) {
-  var ids = ['launchCall', 'sendCall'];
+  var ids = ['launchCall', 'sendCall', 'removeDevice'];
   for (var i = 0; i < ids.length; i++) {
     var id = ids[i];
     var element = document.getElementById(id);
@@ -101,10 +132,11 @@ function setDevices(devices) {
   if (devices.length == 0) {
     Elements.instructions.className = "shown";
   } else {
+    User.devices.splice(0, User.devices.length)
     for (var i = 0; i < devices.length; i++) {
       var device = devices[i];
       User.devices.push(device);
-      var li = createDeviceItem(i);
+      var li = createDeviceItem(device);
       Elements.devices.appendChild(li);
     }
   }

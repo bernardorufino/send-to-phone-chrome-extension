@@ -2,7 +2,17 @@ EMPTY_FUNCTION = function() {};
 
 User = {
   email: null,
-  devices: []
+  devices: [],
+
+  removeDevice: function(deviceId) {
+    var i = 0;
+    while (i < this.devices.length && this.devices[i].id != deviceId) {
+      i++;
+    }
+    if (i < this.devices.length) {
+      this.devices.splice(i, 1);
+    }
+  }
 }
 
 Service = {
@@ -29,6 +39,17 @@ Service = {
     xhr.onload = callbacks.onload
     xhr.onerror = callbacks.onerror
     xhr.send(JSON.stringify(item));
+  },
+
+  removeDevice: function(deviceId, callbacks) {
+    var xhr = new XMLHttpRequest();
+    callbacks = this.reflowCallbacks(callbacks, xhr)
+    xhr.open('POST', this.ENDPOINT + '/devices/' + deviceId + '/delete');
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.responseType = 'json'
+    xhr.onload = callbacks.onload
+    xhr.onerror = callbacks.onerror
+    xhr.send();
   },
 
   // Private
@@ -114,12 +135,25 @@ function getCallbacks(reply) {
 }
 
 chrome.runtime.onMessage.addListener(function(data, sender, reply) {
+  console.log("Message " + data.request + ": data = " + data);
+  console.log(data);
   switch(data.request) {
     case 'getUserAndPageData':
       getUserAndPageData(getCallbacks(reply));
       return true;
     case 'sendItem':
       Service.sendItem(data.deviceId, data.item, getCallbacks(reply));
+      return true;
+    case 'removeDevice':
+      var deviceId = data.deviceId
+      var callbacks = getCallbacks(reply);
+      Service.removeDevice(deviceId, {
+        onsuccess: function(xhr, e, data) {
+          User.removeDevice(deviceId);
+          callbacks.onsuccess(xhr, e, data);
+        },
+        onerror: callbacks.onerror
+      });
       return true;
   }
 });
